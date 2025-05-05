@@ -23,12 +23,16 @@ class PathMasker:
         self,
         look_for: List[str],
         mask_token: str = "MASK",
-        mode: Literal["prefix", "segment"] = "prefix"
+        mode: Literal["prefix", "segment"] = "prefix",
+        enabled: bool = True
     ):
+        self.enabled = enabled
         self.mode = mode
         self.masked_map, self.reversed_map = create_masked_map(look_for, mask_token, mode)
 
     def mask_path(self, path: str) -> str:
+        if not self.enabled:
+            return path
         abs_path = str(Path(path).resolve(strict=False)).rstrip("/")
 
         if self.mode == "prefix":
@@ -45,6 +49,8 @@ class PathMasker:
             return "/".join(masked_parts)
 
     def unmask_path(self, path: str) -> str:
+        if not self.enabled:
+            return path
         if self.mode == "prefix":
             for masked, original in self.reversed_map.items():
                 if path.startswith(masked):
