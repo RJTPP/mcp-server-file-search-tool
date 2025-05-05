@@ -121,7 +121,7 @@ def get_path_type(paths: list[str]) -> dict:
 
 @mcp.tool()
 def list_file_paths(
-    base_dir: str = None,
+    base_dir: Optional[str] = None,
     show_hidden: Optional[bool] = None,
     limit: int = -1,
     time_limit: Optional[float] = None,
@@ -151,6 +151,9 @@ def list_file_paths(
             - time_elapsed (float): Time elapsed in seconds.
             - response_message (str): A message indicating the result of the operation
     """
+    if base_dir is None:
+        base_dir = file_search_tools.get_current_dir()
+    
     base_dir = masker.unmask_path(base_dir)
     try:
         query_result = file_search_tools.list_file_paths(
@@ -305,12 +308,11 @@ def search_file_contents(
 @mcp.tool()
 def list_file_and_search_file_contents(
     regex_patterns: list[str],
-    base_dir: str = None,
+    base_dir: Optional[str] = None,
     show_hidden: Optional[bool] = None,
     limit: int = -1,
     max_nested_level: int = 1,
     start_from: int = 0,
-    abs_path: bool = False,
     context_lines: int = 0,
     time_limit: Optional[float] = None,
 ) -> dict[str, list[list[str]] | str]:
@@ -323,7 +325,6 @@ def list_file_and_search_file_contents(
         limit (int): Maximum number of files to return. Set to -1 for no limit.
         max_nested_level (int): Depth to recurse: 0 = only root, 1 = root+its subdirs, -1 = unlimited.
         start_from (int): Starting index of files to return.
-        abs_path (bool): If true, return absolute paths.
         regex_patterns (list[str]): List of regex strings to match lines against.
         context_lines (int): Number of context lines before and after each match.
         time_limit (Optional[float]): Seconds after which to abort early (−1 = no limit, None = default).
@@ -334,9 +335,11 @@ def list_file_and_search_file_contents(
             - 'time_elapsed': Time elapsed in seconds.
             - 'response_message': A message indicating the result of the operation
     """
+    if base_dir is None:
+        base_dir = file_search_tools.get_current_dir()
     base_dir = masker.unmask_path(base_dir)
     try:
-        listing_query_result = file_search_tools.list_file_paths(base_dir, show_hidden, limit, time_limit, max_nested_level, "bfs", start_from, abs_path, True)
+        listing_query_result = file_search_tools.list_file_paths(base_dir, show_hidden, limit, time_limit, max_nested_level, "bfs", start_from, True, True)
         listing_results = listing_query_result['results']
         listing_time_elapsed = listing_query_result['time_elapsed']
 
@@ -353,7 +356,7 @@ def list_file_and_search_file_contents(
 
         response_message += f"Successfully extracted contents from {len(finding_results)} file{'s' if len(finding_results) > 1 else ''}."
 
-        return return_message(results=finding_results, success=True, time_elapsed=finding_time_elapsed, response_message=response_message)
+        return return_message(results=finding_results, success=True, time_elapsed=(finding_time_elapsed + listing_time_elapsed), response_message=response_message)
     except Exception as e:
         return return_message(results=None, success=False, time_elapsed=None, response_message=str(e))
 

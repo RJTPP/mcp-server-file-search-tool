@@ -19,6 +19,8 @@ class FileSearchTool:
         self.exclude_paths = cleanup_path_list(exclude_paths)
 
     def _resolve_path(self, rel_path: str) -> str:
+        if rel_path in [".", "./"]:
+            return str(Path(self.base_dir).resolve(strict=False))
         p = Path(rel_path).expanduser()
         # 1) If the user passed an absolute path, trust it:
         if p.is_absolute():
@@ -27,7 +29,7 @@ class FileSearchTool:
         return str((Path(self.base_dir) / p).resolve(strict=False))
 
     def get_current_dir(self) -> str:
-        return self.base_dir
+        return self._resolve_path(self.base_dir)
 
 
     # MARK: TEMPORARY TEST FUNCTION
