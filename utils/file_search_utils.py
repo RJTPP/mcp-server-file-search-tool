@@ -141,7 +141,7 @@ class FileSearchTool:
         exclude_regex_patterns: Optional[list[str]] = None,
         base_path: Optional[str] = None,
         time_limit: Optional[float] = None,
-        max_nested_level: int = -1,
+        max_nested_level: int = 1,
         search_mode: str = "bfs",
     ) -> dict[str, list[str] | None]:
         """
@@ -170,7 +170,7 @@ class FileSearchTool:
 
         if base_path in [None, ""]:
             base_path = self.base_dir
-            
+        
         if not os.path.exists(base_path):
             raise FileNotFoundError(f"Path `{base_path}` does not exist.")
         if exclude_regex_patterns is None:

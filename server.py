@@ -134,7 +134,7 @@ def search_file_name(
     exclude_regex_patterns: list[str] = None,
     base_path: str = None,
     time_limit: Optional[float] = None,
-    max_nested_level: int = -1,
+    max_nested_level: int = 1,
     search_mode: str = "bfs",
 ) -> dict:
     """
