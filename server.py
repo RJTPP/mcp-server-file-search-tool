@@ -197,7 +197,7 @@ def read_files(file_paths: list[str]) -> dict:
 
 
 @mcp.tool()
-def search_file_lines(
+def search_file_contents(
     file_paths: list[str], 
     regex_patterns: list[str], 
     context_lines: int = 0, 
@@ -222,7 +222,7 @@ def search_file_lines(
             - 'response_message': A message indicating the result of the operation
     """
     try:
-        query_result = file_search_tools.search_file_lines(file_paths, regex_patterns, context_lines, time_limit)
+        query_result = file_search_tools.search_file_contents(file_paths, regex_patterns, context_lines, time_limit)
         results = query_result['results']
         time_elapsed = query_result['time_elapsed']
         is_time_limit_exceeded = query_result['is_time_limit_exceeded']
@@ -236,6 +236,7 @@ def search_file_lines(
         return return_message(results=results, success=True, time_elapsed=time_elapsed, response_message=response_message)
     except Exception as e:
         return return_message(results=None, success=False, time_elapsed=None, response_message=str(e))
+
 
 
 if __name__ == "__main__":

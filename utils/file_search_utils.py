@@ -282,7 +282,7 @@ class FileSearchTool:
         }
 
 
-    def search_file_lines(
+    def search_file_contents(
         self, 
         file_paths: list[str], 
         regex_patterns: list[str], 
