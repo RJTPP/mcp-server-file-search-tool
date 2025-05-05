@@ -267,6 +267,58 @@ def search_file_contents(
         return return_message(results=None, success=False, time_elapsed=None, response_message=str(e))
 
 
+@mcp.tool()
+def list_file_and_search_file_contents(
+    regex_patterns: list[str],
+    base_dir: str = None,
+    show_hidden: Optional[bool] = None,
+    limit: int = -1,
+    max_nested_level: int = 1,
+    start_from: int = 0,
+    abs_path: bool = False,
+    context_lines: int = 0,
+    time_limit: Optional[float] = None,
+) -> dict[str, list[list[str]] | str]:
+    """
+    List file paths in the given directory, then search each file for lines matching ANY of `regex_patterns`.
+
+    Args:
+        base_dir (str): Base directory to start the search from.
+        show_hidden (bool): Include hidden files (those starting with '.'). Can be overridden by the user.
+        limit (int): Maximum number of files to return. Set to -1 for no limit.
+        max_nested_level (int): Depth to recurse: 0 = only root, 1 = root+its subdirs, -1 = unlimited.
+        start_from (int): Starting index of files to return.
+        abs_path (bool): If true, return absolute paths.
+        regex_patterns (list[str]): List of regex strings to match lines against.
+        context_lines (int): Number of context lines before and after each match.
+        time_limit (Optional[float]): Seconds after which to abort early (−1 = no limit, None = default).
+
+    Returns:
+        Dict with:
+            - 'results': Dict with file paths as keys and lists of line blocks as values.
+            - 'time_elapsed': Time elapsed in seconds.
+            - 'response_message': A message indicating the result of the operation
+    """
+    try:
+        listing_query_result = file_search_tools.list_file_paths(base_dir, show_hidden, limit, time_limit, max_nested_level, "bfs", start_from, abs_path, True)
+        listing_results = listing_query_result['results']
+        listing_time_elapsed = listing_query_result['time_elapsed']
+
+        finding_query_result = file_search_tools.search_file_contents(listing_results, regex_patterns, context_lines, time_limit)
+        finding_results = finding_query_result['results']
+        finding_time_elapsed = finding_query_result['time_elapsed']
+        finding_is_time_limit_exceeded = finding_query_result['is_time_limit_exceeded']
+
+        response_message = ""
+        if finding_is_time_limit_exceeded:
+            response_message = f"Time limit exceeded. "
+
+        response_message += f"Successfully extracted contents from {len(finding_results)} file{'s' if len(finding_results) > 1 else ''}."
+
+        return return_message(results=finding_results, success=True, time_elapsed=finding_time_elapsed, response_message=response_message)
+    except Exception as e:
+        return return_message(results=None, success=False, time_elapsed=None, response_message=str(e))
+
 
 if __name__ == "__main__":
     mcp.run()
