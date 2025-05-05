@@ -9,13 +9,13 @@ from utils.path_utils import pwd, cleanup_path_list, is_path_excluded
 
 
 class FileSearchTool:
-    def __init__(self, init_dir: str, exclude_paths: list[str], hide_hidden: bool = True):
+    def __init__(self, init_dir: str, exclude_paths: list[str], hide_hidden: bool = True, default_time_limit: int = 10):
         self.root_path = Path(pwd()).root
         self._INIT_DIR = Path(init_dir).absolute().as_posix() if init_dir else pwd()
         self._HIDE_HIDDEN = hide_hidden
+        self._DEFAULT_TIME_LIMIT = default_time_limit        
         self.base_dir = self._INIT_DIR
         self.exclude_paths = cleanup_path_list(exclude_paths)
-        
 
     def get_current_dir(self) -> str:
         return self.base_dir
@@ -68,7 +68,7 @@ class FileSearchTool:
 
     def list_file_paths(
         self,
-        base_dir: str = None,
+        base_dir: Optional[str] = None,
         show_hidden: bool = False,
         limit: int = -1,
         start_from: int = 0,
@@ -138,9 +138,9 @@ class FileSearchTool:
     def search_file_name(
         self,
         regex_pattern: list[str],
-        exclude_regex_patterns: list[str] = None,
-        base_path: str = None,
-        time_limit: float = 10.0,
+        exclude_regex_patterns: Optional[list[str]] = None,
+        base_path: Optional[str] = None,
+        time_limit: Optional[float] = None,
         max_nested_level: int = -1,
         search_mode: str = "bfs",
     ) -> dict[str, list[str] | None]:
@@ -151,7 +151,7 @@ class FileSearchTool:
             regex_pattern (list[str]): A list of **regex** pattern to match against filenames. Be sure to escape special characters.
             exclude_regex_patterns (list[str]): a list of **regex** patterns to exclude.
             base_path (str): Directory to start from (defaults to base_dir).
-            time_limit (int): Seconds after which to abort (-1 = no limit).
+            time_limit (int): Seconds after which to abort (-1 = no limit, None = default).
             max_nested_level (int): Depth to recurse: 0 = only root, 1 = root+its subdirs, -1 = unlimited.
             search_mode (str): Search mode: "bfs" (recommended) or "dfs".
 
@@ -161,6 +161,9 @@ class FileSearchTool:
                 - 'time_elapsed': Time elapsed in seconds.
                 - 'is_time_limit_exceeded': True if the time limit was exceeded.
         """
+        if time_limit is None:
+            time_limit = self._DEFAULT_TIME_LIMIT
+
         search_mode = search_mode.lower()
         if search_mode not in ["bfs", "dfs"]:
             search_mode = "bfs"
@@ -275,7 +278,7 @@ class FileSearchTool:
         file_paths: list[str], 
         regex_patterns: list[str], 
         context_lines: int = 0, 
-        time_limit: float = 10.0, 
+        time_limit: Optional[float] = None, 
     ) -> dict[str, list[list[str]] | str]:
         """
         Search each file in `file_paths` list for lines matching ANY of `regex_patterns`,
@@ -287,7 +290,7 @@ class FileSearchTool:
             file_paths (list[str]): List of file paths to search.
             regex_patterns (list[str]): List of regex strings to match lines against.
             context_lines (int): Number of context lines before and after each match.
-            time_limit (float): Seconds after which to abort early (−1 = no limit).
+            time_limit (float): Seconds after which to abort early (−1 = no limit, None = default).
 
         Returns:
             Dict with:
@@ -295,6 +298,9 @@ class FileSearchTool:
                 - 'time_elapsed': Time elapsed in seconds.
                 - 'is_time_limit_exceeded': True if the time limit was exceeded.
         """
+        if time_limit is None:
+            time_limit = self._DEFAULT_TIME_LIMIT
+
         start_time = datetime.now()
         include_re = [re.compile(p) for p in regex_patterns]
         
