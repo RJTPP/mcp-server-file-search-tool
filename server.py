@@ -95,20 +95,28 @@ def get_path_type(paths: list[str]) -> dict:
 @mcp.tool()
 def list_file_paths(
     base_dir: str = None,
-    show_hidden: bool = False,
+    show_hidden: Optional[bool] = None,
     limit: int = -1,
+    time_limit: Optional[float] = None,
+    max_nested_level: int = 1,
+    search_mode: str = "bfs",
     start_from: int = 0,
     abs_path: bool = False,
+    file_only: bool = False,
 ) -> dict:
     """
-    List file paths in the given directory, including directories and symbolic links.
+    List file paths in the given directory, including directories and symbolic links. Equivalent to `ls`.
 
     Args:
         base_dir (str): Base directory to start the search from.
         show_hidden (bool): Include hidden files (those starting with '.'). Can be overridden by the user.
         limit (int): Maximum number of files to return. Set to -1 for no limit.
+        time_limit (Optional[float]): Seconds after which to abort (-1 = no limit, None = default).
+        max_nested_level (int): Depth to recurse: 0 = only root, 1 = root+its subdirs, -1 = unlimited.
+        search_mode (str): Search mode: "bfs" (recommended) or "dfs".
         start_from (int): Starting index of files to return.
         abs_path (bool): If true, return absolute paths.
+        file_only (bool): If true, only return files.
 
     Returns:
         dict: A dictionary with the following keys:
@@ -117,7 +125,17 @@ def list_file_paths(
             - response_message (str): A message indicating the result of the operation
     """
     try:
-        query_result = file_search_tools.list_file_paths(base_dir, show_hidden, limit, start_from, abs_path)
+        query_result = file_search_tools.list_file_paths(
+            base_dir=base_dir,
+            show_hidden=show_hidden,
+            limit=limit,
+            time_limit=time_limit,
+            max_nested_level=max_nested_level,
+            search_mode=search_mode,
+            start_from=start_from,
+            abs_path=abs_path,
+            file_only=file_only,
+        )
         results = query_result['results']
         response_message = ""
         is_limit_exceeded = query_result['is_limit_exceeded']
