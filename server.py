@@ -178,7 +178,14 @@ def search_file_name(
             - 'response_message': A message indicating the result of the operation
     """
     try:
-        query_result = file_search_tools.search_file_name(regex_pattern, exclude_regex_patterns, base_path, time_limit, max_nested_level, search_mode)
+        query_result = file_search_tools.search_file_name(
+            regex_pattern=regex_pattern,
+            exclude_regex_patterns=exclude_regex_patterns,
+            base_path=base_path,
+            time_limit=time_limit,
+            max_nested_level=max_nested_level,
+            search_mode=search_mode,
+        )
         results = query_result['results']
         response_message = ""
         time_elapsed = query_result['time_elapsed']
