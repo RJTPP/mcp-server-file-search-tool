@@ -175,11 +175,20 @@ class FileSearchTool:
             raise FileNotFoundError(f"Path `{base_path}` does not exist.")
         if exclude_regex_patterns is None:
             exclude_regex_patterns = []
-        start_time = datetime.now()
-        pat = [re.compile(p) for p in regex_pattern]
-        ex_pat = [re.compile(p) for p in exclude_regex_patterns]
+        
+        try:
+            pat = [re.compile(p) for p in regex_pattern]
+        except re.error as e:
+            raise ValueError(f"Invalid regex pattern in `regex_pattern`: {e}")
+
+        try:
+            ex_pat = [re.compile(p) for p in exclude_regex_patterns]
+        except re.error as e:
+            raise ValueError(f"Invalid regex pattern in `exclude_regex_patterns`: {e}")
+
         root = os.path.abspath(base_path or self.base_dir)
         
+        start_time = datetime.now()
         
         results: list[str] = []
         queue = deque([(root, 0)]) if search_mode == "bfs" else [(root, 0)]  # (directory, current_level)
