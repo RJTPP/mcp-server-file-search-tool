@@ -141,7 +141,7 @@ def list_file_paths(
         is_limit_exceeded = query_result['is_limit_exceeded']
         
         if is_limit_exceeded:
-            response_message = f"File limit exceeded."
+            response_message = f"File limit exceeded. "
 
         response_message += f"{len(results)} file path{'s' if len(results) > 1 else ''} retrieved successfully."
 
@@ -193,7 +193,7 @@ def search_file_name(
         
         response_message = ""
         if is_time_limit_exceeded:
-            response_message = f"Time limit exceeded."
+            response_message = f"Time limit exceeded. "
 
         response_message += f"{len(results)} file path{'s' if len(results) > 1 else ''} retrieved successfully."
 
@@ -258,7 +258,7 @@ def search_file_contents(
         
         response_message = ""
         if is_time_limit_exceeded:
-            response_message = f"Time limit exceeded."
+            response_message = f"Time limit exceeded. "
 
         response_message += f"{len(results)} file path{'s' if len(results) > 1 else ''} retrieved successfully."
 
