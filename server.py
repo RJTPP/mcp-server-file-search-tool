@@ -239,7 +239,7 @@ def search_file_contents(
     its value is an error string.
 
     Args:
-        file_paths (list[str]): List of file paths to search.
+        file_paths (list[str]): List of **actual file path** to search, not directory paths.
         regex_patterns (list[str]): List of regex strings to match lines against.
         context_lines (int): Number of context lines before and after each match.
         time_limit (Optional[float]): Seconds after which to abort early (−1 = no limit, None = default).
