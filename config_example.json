@@ -4,5 +4,13 @@
     "HIDE_HIDDEN_FILES": true,
     "EXCLUDE_PATHS": [
         "/path/to/excluded/directory"
-    ]
+    ],
+    "PATH_MASKER": {
+        "ENABLED": true,
+        "MODE": "prefix",
+        "MASK_TOKEN": "MASK",
+        "LOOK_FOR": [
+            "/path/to/excluded/directory"
+        ]
+    }
 }

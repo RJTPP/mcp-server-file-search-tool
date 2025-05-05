@@ -1,11 +1,33 @@
 # server.py
 from os import curdir
 from mcp.server.fastmcp import FastMCP
-from utils import FileSearchTool, return_message
-from config import BASE_DIR, EXCLUDE_PATHS, HIDE_HIDDEN_FILES, DEFAULT_TIME_LIMIT
 from typing import Optional
 
-file_search_tools = FileSearchTool(BASE_DIR, EXCLUDE_PATHS, HIDE_HIDDEN_FILES, DEFAULT_TIME_LIMIT)
+from utils import FileSearchTool, return_message, PathMasker
+from config import (
+    BASE_DIR,
+    EXCLUDE_PATHS,
+    HIDE_HIDDEN_FILES,
+    DEFAULT_TIME_LIMIT,
+    PATH_MASKER_LOOK_FOR,
+    PATH_MASKER_MODE,
+    PATH_MASKER_MASK_TOKEN,
+    PATH_MASKER_ENABLED
+)
+
+file_search_tools = FileSearchTool(
+    init_dir=BASE_DIR,
+    exclude_paths=EXCLUDE_PATHS,
+    hide_hidden=HIDE_HIDDEN_FILES,
+    default_time_limit=DEFAULT_TIME_LIMIT
+)
+
+masker = PathMasker(
+    look_for=PATH_MASKER_LOOK_FOR,
+    mode=PATH_MASKER_MODE,
+    mask_token=PATH_MASKER_MASK_TOKEN,
+    enabled=PATH_MASKER_ENABLED
+)
 
 # Create an MCP server
 mcp = FastMCP(
@@ -37,6 +59,7 @@ def get_current_dir() -> dict:
             success=False,
             response_message="Failed to get current directory.",
         )
+    current_dir = masker.mask_path(current_dir)
     return return_message(
         results=current_dir,
         success=True,
@@ -58,19 +81,21 @@ def change_dir(path: Optional[str] = None) -> dict:
             - success (bool): True if the operation was successful
             - response_message (str): A message indicating the result of the operation
     """
+    masked_base_dir = masker.mask_path(file_search_tools.base_dir)
     if not path:
         path = file_search_tools._INIT_DIR
     try:
         new_dir = file_search_tools.change_dir(path)
+        new_dir = masker.mask_path(new_dir)
         return return_message(results=new_dir, success=True, response_message="Changed directory.")
     except FileNotFoundError:
-        return return_message(results=file_search_tools.base_dir, success=False, response_message=f"Path not found. Reverting back to `{file_search_tools.base_dir}`.")
+        return return_message(results=masked_base_dir, success=False, response_message=f"Path not found. Reverting back to `{masked_base_dir}`.")
     except PermissionError:
-        return return_message(results=file_search_tools.base_dir, success=False, response_message=f"Permission denied. Reverting back to `{file_search_tools.base_dir}`.")
+        return return_message(results=masked_base_dir, success=False, response_message=f"Permission denied. Reverting back to `{masked_base_dir}`.")
     except NotADirectoryError:
-        return return_message(results=file_search_tools.base_dir, success=False, response_message=f"Path is not a directory. Reverting back to `{file_search_tools.base_dir}`.")
+        return return_message(results=masked_base_dir, success=False, response_message=f"Path is not a directory. Reverting back to `{masked_base_dir}`.")
     except Exception as e:
-        return return_message(results=file_search_tools.base_dir, success=False, response_message=f"Failed to change directory. Reverting back to `{file_search_tools.base_dir}`. Error: {str(e)}")
+        return return_message(results=masked_base_dir, success=False, response_message=f"Failed to change directory. Reverting back to `{masked_base_dir}`. Error: {str(e)}")
 
 @mcp.tool()
 def get_path_type(paths: list[str]) -> dict:
@@ -124,6 +149,7 @@ def list_file_paths(
             - time_elapsed (float): Time elapsed in seconds.
             - response_message (str): A message indicating the result of the operation
     """
+    base_dir = masker.unmask_path(base_dir)
     try:
         query_result = file_search_tools.list_file_paths(
             base_dir=base_dir,
@@ -137,6 +163,7 @@ def list_file_paths(
             file_only=file_only,
         )
         results = query_result['results']
+        results = masker.mask_multiple_paths(results)
         response_message = ""
         is_limit_exceeded = query_result['is_limit_exceeded']
         
@@ -177,6 +204,7 @@ def search_file_name(
             - 'time_elapsed': Time elapsed in seconds.
             - 'response_message': A message indicating the result of the operation
     """
+    base_path = masker.unmask_path(base_path)
     try:
         query_result = file_search_tools.search_file_name(
             regex_pattern=regex_pattern,
@@ -187,6 +215,7 @@ def search_file_name(
             search_mode=search_mode,
         )
         results = query_result['results']
+        results = masker.mask_multiple_paths(results)
         response_message = ""
         time_elapsed = query_result['time_elapsed']
         is_time_limit_exceeded = query_result['is_time_limit_exceeded']
@@ -215,9 +244,11 @@ def read_files(file_paths: list[str]) -> dict:
             - 'time_elapsed': Time elapsed in seconds.
             - 'response_message': A message indicating the result of the operation
     """
+    file_paths = masker.unmask_multiple_paths(file_paths)
     try:
         query_result = file_search_tools.read_files(file_paths)
         results = query_result['results']
+        results = {masker.mask_path(k): v for k, v in results.items()}
         time_elapsed = query_result['time_elapsed']
         
         return return_message(results=results, success=True, time_elapsed=time_elapsed, response_message=f"Successfully read {len(results)} file{'s' if len(results) > 1 else ''}.")
@@ -250,9 +281,11 @@ def search_file_contents(
             - 'time_elapsed': Time elapsed in seconds.
             - 'response_message': A message indicating the result of the operation
     """
+    file_paths = masker.unmask_multiple_paths(file_paths)
     try:
         query_result = file_search_tools.search_file_contents(file_paths, regex_patterns, context_lines, time_limit)
         results = query_result['results']
+        results = {masker.mask_path(k): v for k, v in results.items()}
         time_elapsed = query_result['time_elapsed']
         is_time_limit_exceeded = query_result['is_time_limit_exceeded']
         
@@ -299,6 +332,7 @@ def list_file_and_search_file_contents(
             - 'time_elapsed': Time elapsed in seconds.
             - 'response_message': A message indicating the result of the operation
     """
+    base_dir = masker.unmask_path(base_dir)
     try:
         listing_query_result = file_search_tools.list_file_paths(base_dir, show_hidden, limit, time_limit, max_nested_level, "bfs", start_from, abs_path, True)
         listing_results = listing_query_result['results']
@@ -306,6 +340,8 @@ def list_file_and_search_file_contents(
 
         finding_query_result = file_search_tools.search_file_contents(listing_results, regex_patterns, context_lines, time_limit)
         finding_results = finding_query_result['results']
+        finding_results = {masker.mask_path(k): v for k, v in finding_results.items()}
+        
         finding_time_elapsed = finding_query_result['time_elapsed']
         finding_is_time_limit_exceeded = finding_query_result['is_time_limit_exceeded']
 
