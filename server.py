@@ -111,8 +111,10 @@ def get_path_type(paths: list[str]) -> dict:
             - success (bool): True if the operation was successful
             - response_message (str): A message indicating the result of the operation
     """
+    paths = masker.unmask_multiple_paths(paths)
     try:
         path_type = file_search_tools.get_path_type(paths)
+        path_type = [(masker.mask_path(p), t) for p, t in path_type]
         return return_message(results=path_type, success=True, response_message=f"{len(paths)} path type{'s' if len(paths) > 1 else ''} retrieved successfully.")
     except Exception as e:
         return return_message(results=None, success=False, response_message=str(e))
