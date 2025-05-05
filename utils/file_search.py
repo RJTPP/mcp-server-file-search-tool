@@ -5,7 +5,7 @@ from datetime import datetime
 from collections import deque
 import re
 
-from .path_utils import pwd, cleanup_path_list, is_path_excluded
+from .path import pwd, cleanup_path_list, is_path_excluded
 
 
 class FileSearchTool:
