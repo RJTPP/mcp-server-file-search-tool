@@ -67,6 +67,10 @@ def change_dir(path: Optional[str] = None) -> dict:
         return return_message(results=file_search_tools.base_dir, success=False, response_message=f"Path not found. Reverting back to `{file_search_tools.base_dir}`.")
     except PermissionError:
         return return_message(results=file_search_tools.base_dir, success=False, response_message=f"Permission denied. Reverting back to `{file_search_tools.base_dir}`.")
+    except NotADirectoryError:
+        return return_message(results=file_search_tools.base_dir, success=False, response_message=f"Path is not a directory. Reverting back to `{file_search_tools.base_dir}`.")
+    except Exception as e:
+        return return_message(results=file_search_tools.base_dir, success=False, response_message=f"Failed to change directory. Reverting back to `{file_search_tools.base_dir}`. Error: {str(e)}")
 
 @mcp.tool()
 def get_path_type(paths: list[str]) -> dict:
