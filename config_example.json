@@ -1,0 +1,8 @@
+{
+    "BASE_DIR": "/path/to/base/directory",
+    "DEFAULT_TIME_LIMIT": 10,
+    "HIDE_HIDDEN_FILES": true,
+    "EXCLUDE_PATHS": [
+        "/path/to/excluded/directory"
+    ]
+}
