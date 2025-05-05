@@ -1,18 +1,19 @@
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, Literal
 import os
 from datetime import datetime
 from collections import deque
 import re
 
-from .path import pwd, cleanup_path_list, is_path_excluded
+
+from .path import pwd, cleanup_path_list, is_path_excluded, is_hidden
 
 
 class FileSearchTool:
     def __init__(self, init_dir: str, exclude_paths: list[str], hide_hidden: bool = True, default_time_limit: int = 10):
         self.root_path = Path(pwd()).root
         self._INIT_DIR = str(Path(init_dir).resolve()) if init_dir else pwd()
-        self._HIDE_HIDDEN = hide_hidden
+        self._SHOW_HIDDEN = not hide_hidden
         self._DEFAULT_TIME_LIMIT = default_time_limit        
         self.base_dir = self._INIT_DIR
         self.exclude_paths = cleanup_path_list(exclude_paths)
@@ -85,11 +86,11 @@ class FileSearchTool:
     def list_file_paths(
         self,
         base_dir: Optional[str] = None,
-        show_hidden: Optional[bool] = None,
+        show_hidden: bool = False,
         limit: int = -1,
         time_limit: Optional[float] = None,
         max_nested_level: int = 1,
-        search_mode: str = "bfs",
+        search_mode: Literal["bfs", "dfs"] = "bfs",
         start_from: int = 0,
         abs_path: bool = False,
         file_only: bool = False,
@@ -103,7 +104,7 @@ class FileSearchTool:
             limit (int): Maximum number of files to return. Set to -1 for no limit.
             time_limit (Optional[float]): Seconds after which to abort (-1 = no limit, None = default).
             max_nested_level (int): Depth to recurse: 0 = only root, 1 = root+its subdirs, -1 = unlimited.
-            search_mode (str): Search mode: "bfs" (recommended) or "dfs".
+            search_mode (Literal["bfs", "dfs"]): Search mode: "bfs" (recommended) or "dfs".
             start_from (int): Starting index of files to return.
             abs_path (bool): If true, return absolute paths.
             file_only (bool): If true, only return files.
@@ -115,15 +116,11 @@ class FileSearchTool:
                 - 'is_limit_exceeded': True if the limit was exceeded.
                 - 'is_time_limit_exceeded': True if the time limit was exceeded.
         """
-        if show_hidden is None:
-            show_hidden = not self._HIDE_HIDDEN
+        if not self._SHOW_HIDDEN:
+            show_hidden = False
         
         if time_limit is None:
             time_limit = self._DEFAULT_TIME_LIMIT
-
-        search_mode = search_mode.lower()
-        if search_mode not in ["bfs", "dfs"]:
-            search_mode = "bfs"
 
         if base_dir in [None, ""]:
             base_dir = self.base_dir
@@ -141,7 +138,7 @@ class FileSearchTool:
         while queue:
             # Pop according to mode
             current_dir, depth = (
-                queue.popleft() if search_mode.lower() == "bfs" else queue.pop()
+                queue.popleft() if search_mode == "bfs" else queue.pop()
             )
 
             # Respect depth limit (-1 means unlimited)
@@ -154,7 +151,7 @@ class FileSearchTool:
                 continue
 
             # Optionally skip hidden
-            entries = [e for e in entries if show_hidden or not e.startswith(".")]
+            entries = [e for e in entries if show_hidden or not is_hidden(e)]
             entries.sort()
 
             # Apply start_from only at the root level
@@ -206,9 +203,10 @@ class FileSearchTool:
         regex_pattern: list[str],
         exclude_regex_patterns: Optional[list[str]] = None,
         base_path: Optional[str] = None,
+        show_hidden: bool = False,
         time_limit: Optional[float] = None,
         max_nested_level: int = 1,
-        search_mode: str = "bfs",
+        search_mode: Literal["bfs", "dfs"] = "bfs",
     ) -> dict[str, list[str] | None]:
         """
         Search for files whose **path** match the given regex, level‑by‑level.
@@ -217,9 +215,10 @@ class FileSearchTool:
             regex_pattern (list[str]): A list of **regex** pattern to match against filenames. Be sure to escape special characters.
             exclude_regex_patterns (list[str]): a list of **regex** patterns to exclude.
             base_path (str): Directory to start from (defaults to base_dir).
+            show_hidden (bool): Include hidden files (those starting with '.'). Can be overridden by the user.
             time_limit (int): Seconds after which to abort (-1 = no limit, None = default).
             max_nested_level (int): Depth to recurse: 0 = only root, 1 = root+its subdirs, -1 = unlimited.
-            search_mode (str): Search mode: "bfs" (recommended) or "dfs".
+            search_mode (Literal["bfs", "dfs"]): Search mode: "bfs" (recommended) or "dfs".
 
         Returns:
             dict[str, list[str] | None]: Dict with
@@ -230,13 +229,12 @@ class FileSearchTool:
         if time_limit is None:
             time_limit = self._DEFAULT_TIME_LIMIT
 
-        search_mode = search_mode.lower()
-        if search_mode not in ["bfs", "dfs"]:
-            search_mode = "bfs"
-
         if base_path in [None, ""]:
             base_path = self.base_dir
         
+        if not self._SHOW_HIDDEN:
+            show_hidden = False
+
         if not os.path.exists(base_path):
             raise FileNotFoundError(f"Path `{base_path}` does not exist.")
         if exclude_regex_patterns is None:
@@ -286,6 +284,8 @@ class FileSearchTool:
 
                 if not os.path.isdir(full_path):
                     for p in pat:
+                        if not show_hidden and is_hidden(name):
+                            continue
                         if p.search(name):
                             results.append(full_path)
                             break
