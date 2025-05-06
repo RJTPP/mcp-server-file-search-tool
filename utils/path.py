@@ -9,9 +9,6 @@ def pwd():
     return current_dir
 
 
-import os
-from pathlib import Path
-
 def path_startswith(base: str, target: str) -> bool:
     """
     Checks whether 'target' path is inside or equal to 'base' path.
@@ -22,8 +19,8 @@ def path_startswith(base: str, target: str) -> bool:
     - Symlink resolution (if needed)
     """
     try:
-        base_path = Path(base).resolve(strict=False)
-        target_path = Path(target).resolve(strict=False)
+        base_path = Path(base).resolve(strict=False).absolute()
+        target_path = Path(target).resolve(strict=False).absolute()
 
         # Convert to string and normalize (handle case-insensitive on Windows)
         base_str = str(base_path)
