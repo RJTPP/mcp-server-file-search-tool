@@ -12,7 +12,9 @@ from config import (
     PATH_MASKER_LOOK_FOR,
     PATH_MASKER_MODE,
     PATH_MASKER_MASK_TOKEN,
-    PATH_MASKER_ENABLED
+    PATH_MASKER_ENABLED,
+    HOST,
+    PORT
 )
 
 file_search_tools = FileSearchTool(
@@ -32,8 +34,8 @@ masker = PathMasker(
 # Create an MCP server
 mcp = FastMCP(
     name="File Search Tool",
-    host="0.0.0.0",
-    port=8000,
+    host=HOST,
+    port=PORT,
 )
 
 
