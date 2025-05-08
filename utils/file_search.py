@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 from collections import deque
 import re
+import mimetypes
 
 
 from .path import cleanup_path_list, is_hidden, path_startswith
@@ -109,6 +110,13 @@ class FileSearchTool:
                 file_type = "symbolic link"
             elif os.path.isfile(path):
                 file_type = "file"
+                try:
+                    mime_type = mimetypes.guess_type(path)[0]
+                    if mime_type:
+                        file_type = mime_type
+                except Exception:
+                    pass
+
             return file_type
         
         return [(p, _sub_get_path_type(p)) for p in paths]
