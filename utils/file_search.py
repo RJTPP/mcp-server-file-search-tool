@@ -1,16 +1,16 @@
 from pathlib import Path
-from typing import Optional, Union, Literal
+from typing import Optional, Literal, Any, Dict, List, Tuple
 import os
 from datetime import datetime
 from collections import deque
 import re
 
 
-from .path import pwd, cleanup_path_list, is_hidden, path_startswith
+from .path import cleanup_path_list, is_hidden, path_startswith
 
 
 class FileSearchTool:
-    def __init__(self, allowed_paths: list[str], exclude_paths: list[str], hide_hidden: bool = True, default_time_limit: int = 10):
+    def __init__(self, allowed_paths: List[str], exclude_paths: List[str], hide_hidden: bool = True, default_time_limit: int = 10) -> None:
         self.allowed_paths = cleanup_path_list(allowed_paths)
         self.exclude_paths = cleanup_path_list(exclude_paths)
         
@@ -63,12 +63,12 @@ class FileSearchTool:
         return real_str
 
 
-    def get_allowed_paths(self) -> list[str]:
+    def get_allowed_paths(self) -> List[str]:
         return self.allowed_paths
 
 
     # MARK: TEMPORARY TEST FUNCTION
-    def get_exclude_paths(self) -> list[str]:
+    def get_exclude_paths(self) -> List[str]:
         return self.exclude_paths
     
     
@@ -84,15 +84,15 @@ class FileSearchTool:
             return False
   
 
-    def get_path_type(self, paths: list[str]) -> list[tuple[str, str]]:
+    def get_path_type(self, paths: List[str]) -> List[Tuple[str, str]]:
         """
         Get the type of the given path.
 
         Args:
-            paths (list[str]): List of paths or a single path to get the type of.
+            paths (List[str]): List of paths or a single path to get the type of.
 
         Returns:
-            list[tuple[str, str]]: List of tuples of (path, type).
+            List[Tuple[str, str]]: List of tuples of (path, type).
         """
         def _sub_get_path_type(path: str) -> str:
             
@@ -126,7 +126,7 @@ class FileSearchTool:
         start_from: int = 0,
         abs_path: bool = False,
         file_only: bool = False,
-    ) -> dict[str, Union[list[str], float, bool]]:
+    ) -> Dict[str, Any]:
         """
         List file paths in the given directory, including directories and symbolic links.
 
@@ -142,7 +142,7 @@ class FileSearchTool:
             file_only (bool): If true, only return files.
 
         Returns:
-            dict[str, list[str] | None]: Dict with:
+            Dict[str, Any]: Dict with:
                 - 'results': List of files. Sorted alphabetically.
                 - 'time_elapsed': Time elapsed in seconds.
                 - 'is_limit_exceeded': True if the limit was exceeded.
@@ -232,30 +232,30 @@ class FileSearchTool:
 
     def search_file_name(
         self,
-        regex_pattern: list[str],
-        exclude_regex_patterns: Optional[list[str]] = None,
+        regex_pattern: List[str],
+        exclude_regex_patterns: Optional[List[str]] = None,
         base_path: Optional[str] = None,
         show_hidden: bool = False,
         time_limit: Optional[float] = None,
         max_nested_level: int = 1,
         abs_path: bool = False,
         search_mode: Literal["bfs", "dfs"] = "bfs",
-    ) -> dict[str, list[str] | None]:
+    ) -> Dict[str, Any]:
         """
         Search for files whose **path** match the given regex, level‑by‑level.
 
         Args:
-            regex_pattern (list[str]): A list of **regex** pattern to match against filenames. Be sure to escape special characters.
-            exclude_regex_patterns (list[str]): a list of **regex** patterns to exclude.
-            base_path (str): Directory to start from (defaults to base_dir).
+            regex_pattern (List[str]): A list of **regex** pattern to match against filenames. Be sure to escape special characters.
+            exclude_regex_patterns (Optional[List[str]]): a list of **regex** patterns to exclude.
+            base_path (Optional[str]): Directory to start from (defaults to base_dir).
             show_hidden (bool): Include hidden files (those starting with '.'). Can be overridden by the user.
-            time_limit (int): Seconds after which to abort (-1 = no limit, None = default).
+            time_limit (Optional[float]): Seconds after which to abort (-1 = no limit, None = default).
             max_nested_level (int): Depth to recurse: 0 = only root, 1 = root+its subdirs, -1 = unlimited.
             abs_path (bool): If True, return absolute paths.
             search_mode (Literal["bfs", "dfs"]): Search mode: "bfs" (recommended) or "dfs".
 
         Returns:
-            dict[str, list[str] | None]: Dict with
+            Dict[str, Any]: Dict with
                 - 'results': List of files matching regex. Sorted alphabetically.
                 - 'time_elapsed': Time elapsed in seconds.
                 - 'is_time_limit_exceeded': True if the time limit was exceeded.
@@ -345,15 +345,15 @@ class FileSearchTool:
         }
     
     
-    def read_files(self, file_paths: list[str]) -> dict[str, list[str] | None]:
+    def read_files(self, file_paths: List[str]) -> Dict[str, Any]:
         """
         Read the contents of the given files using `open()` function. Cannot read PDFs.
 
         Args:
-            file_paths (list[str]): List of file paths to read.
+            file_paths (List[str]): List of file paths to read.
 
         Returns:
-            dict[str, list[str] | None]: Dict with:
+            Dict[str, Any]: Dict with:
                 - 'results': Dict with 'results' as a dict mapping file paths to contents.
                 - 'time_elapsed': Time elapsed in seconds.
             
@@ -363,7 +363,7 @@ class FileSearchTool:
         
         start_time = datetime.now()
 
-        results = {}
+        results: Dict[str, Any] = {}
         for file_path in file_paths:
             file_path = self._resolve_path(file_path, strict=False)
 
@@ -390,26 +390,26 @@ class FileSearchTool:
 
     def search_file_contents(
         self, 
-        file_paths: list[str], 
-        regex_patterns: list[str], 
+        file_paths: List[str], 
+        regex_patterns: List[str], 
         context_lines: int = 0, 
         time_limit: Optional[float] = None, 
-    ) -> dict[str, Union[list[list[str]], str, bool, float]]:
+    ) -> Dict[str, Any]:
         """
-        Search each file in `file_paths` list for lines matching ANY of `regex_patterns`,
-        Returns, for each file that matches, a list of line‑blocks (each block is
+        Search each file in `file_paths` List for lines matching ANY of `regex_patterns`,
+        Returns, for each file that matches, a List of line‑blocks (each block is
         up to `context_lines` before/after the match). If a file cannot be read,
         its value is an error string.
 
         Args:
-            file_paths (list[str]): List of file paths to search.
-            regex_patterns (list[str]): List of regex strings to match lines against.
+            file_paths (List[str]): List of file paths to search.
+            regex_patterns (List[str]): List of regex strings to match lines against.
             context_lines (int): Number of context lines before and after each match.
             time_limit (float): Seconds after which to abort early (−1 = no limit, None = default).
 
         Returns:
-            Dict with:
-                - 'results': Dict with file paths as keys and lists of line blocks as values.
+            Dict[str, Any]: Dict with:
+                - 'results': Dict with file paths as keys and Lists of line blocks as values.
                 - 'time_elapsed': Time elapsed in seconds.
                 - 'is_time_limit_exceeded': True if the time limit was exceeded.
         """
@@ -422,7 +422,7 @@ class FileSearchTool:
         except re.error as e:
             raise ValueError(f"Invalid regex pattern in `regex_pattern`: {e}")
         
-        results: dict[str, list[list[str]] | str] = {}
+        results: Dict[str, Any] = {}
 
         for rel_path in file_paths:
             # --- Time limit check ---

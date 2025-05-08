@@ -1,7 +1,7 @@
 # server.py
 from os import curdir
 from mcp.server.fastmcp import FastMCP
-from typing import Optional
+from typing import Optional, Union, Literal, Dict, List, Any
 
 from utils import FileSearchTool, return_message, PathMasker
 from config import (
@@ -41,7 +41,7 @@ mcp = FastMCP(
 
 
 @mcp.tool()
-def get_allowed_paths() -> dict:
+def get_allowed_paths() -> Dict[str, Any]:
     """
     Retrieve the list of allowed root directories that this server is permitted to access.
 
@@ -50,7 +50,7 @@ def get_allowed_paths() -> dict:
     if path masking is enabled.
 
     Returns:
-        dict: A dictionary with the following keys:
+        Dict: A dictionary with the following keys:
             - results (list[str]): List of allowed directory paths (masked if configured).
             - success (bool): True if the operation was successful.
             - response_message (str): A human-readable description of the result.
@@ -64,7 +64,7 @@ def get_allowed_paths() -> dict:
     
 # TODO: Read MIME types
 @mcp.tool()
-def get_path_type(paths: list[str]) -> dict:
+def get_path_type(paths: list[str]) -> Dict[str, Any]:
     """
     Get the type of the given path.
 
@@ -72,7 +72,7 @@ def get_path_type(paths: list[str]) -> dict:
         paths (list[str]): List of paths or a single path to get the type of.
 
     Returns:
-        dict: A dictionary with the following keys:
+        Dict: A dictionary with the following keys:
             - results (list[tuple[str, str]]): List of tuples of (path, type).
             - success (bool): True if the operation was successful
             - response_message (str): A message indicating the result of the operation
@@ -93,11 +93,11 @@ def list_file_paths(
     limit: int = -1,
     time_limit: Optional[float] = None,
     max_nested_level: int = 1,
-    search_mode: str = "bfs",
+    search_mode: Literal["bfs", "dfs"] = "bfs",
     start_from: int = 0,
     abs_path: bool = False,
     file_only: bool = False,
-) -> dict:
+) -> Dict[str, Any]:
     """
     List file paths in the given directory, including directories and symbolic links. Equivalent to `ls`.
 
@@ -113,7 +113,7 @@ def list_file_paths(
         file_only (bool): If true, only return files.
 
     Returns:
-        dict: A dictionary with the following keys:
+        Dict: A dictionary with the following keys:
             - results (list[str]): List of files. Sorted alphabetically.
             - time_elapsed (float): Time elapsed in seconds.
             - response_message (str): A message indicating the result of the operation
@@ -148,13 +148,13 @@ def list_file_paths(
 
 @mcp.tool()
 def search_file_name(
-    regex_pattern: list[str],
-    exclude_regex_patterns: list[str] = None,
+    regex_pattern: List[str],
+    exclude_regex_patterns: List[str] = None,
     base_path: str = None,
     time_limit: Optional[float] = None,
     max_nested_level: int = 1,
-    search_mode: str = "bfs",
-) -> dict:
+    search_mode: Literal["bfs", "dfs"] = "bfs",
+) -> Dict[str, Any]:
     """
     Search for files whose **path** match the given regex, level‑by‑level.
 
@@ -167,7 +167,7 @@ def search_file_name(
         search_mode (str): Search mode: "bfs" (recommended) or "dfs".
 
     Returns:
-        dict[str, list[str] | None]: Dict with
+        Dict: A dictionary with the following keys:
             - 'results': List of files matching regex. Sorted alphabetically.
             - 'success': True if the operation was successful
             - 'time_elapsed': Time elapsed in seconds.
@@ -201,7 +201,7 @@ def search_file_name(
 
 # TODO: Read multiple files types
 @mcp.tool()
-def read_files(file_paths: list[str]) -> dict:
+def read_files(file_paths: List[str]) -> Dict[str, Any]:
     """
     Read the contents of the given files using `open()` function. Cannot read PDFs.
 
@@ -209,7 +209,7 @@ def read_files(file_paths: list[str]) -> dict:
         file_paths (list[str]): List of file paths to read.
 
     Returns:
-        dict[str, list[str] | None]: Dict with:
+        Dict: A dictionary with the following keys:
             - 'results': Dict with file paths as keys and file contents as values.
             - 'time_elapsed': Time elapsed in seconds.
             - 'response_message': A message indicating the result of the operation
@@ -229,11 +229,11 @@ def read_files(file_paths: list[str]) -> dict:
 # TODO: Read multiple files types
 @mcp.tool()
 def search_file_contents(
-    file_paths: list[str], 
-    regex_patterns: list[str], 
+    file_paths: List[str], 
+    regex_patterns: List[str], 
     context_lines: int = 0, 
     time_limit: Optional[float] = None, 
-) -> dict[str, list[list[str]] | str]:
+) -> Dict[str, Any]:
     """
     Search each file in `file_paths` list for lines matching ANY of `regex_patterns`,
     Returns, for each file that matches, a list of line‑blocks (each block is
@@ -247,7 +247,7 @@ def search_file_contents(
         time_limit (Optional[float]): Seconds after which to abort early (−1 = no limit, None = default).
 
     Returns:
-        Dict with:
+        Dict: A dictionary with the following keys:
             - 'results': Dict with file paths as keys and lists of line blocks as values.
             - 'time_elapsed': Time elapsed in seconds.
             - 'response_message': A message indicating the result of the operation
@@ -274,7 +274,7 @@ def search_file_contents(
 # TODO: Read multiple files types
 @mcp.tool()
 def list_file_and_search_file_contents(
-    regex_patterns: list[str],
+    regex_patterns: List[str],
     base_dir: str,
     show_hidden: Optional[bool] = None,
     limit: int = -1,
@@ -282,7 +282,7 @@ def list_file_and_search_file_contents(
     start_from: int = 0,
     context_lines: int = 0,
     time_limit: Optional[float] = None,
-) -> dict[str, list[list[str]] | str]:
+) -> Dict[str, Any]:
     """
     List file paths in the given directory, then search each file for lines matching ANY of `regex_patterns`.
 
@@ -297,7 +297,7 @@ def list_file_and_search_file_contents(
         time_limit (Optional[float]): Seconds after which to abort early (−1 = no limit, None = default).
 
     Returns:
-        Dict with:
+        Dict: A dictionary with the following keys:
             - 'results': Dict with file paths as keys and lists of line blocks as values.
             - 'time_elapsed': Time elapsed in seconds.
             - 'response_message': A message indicating the result of the operation

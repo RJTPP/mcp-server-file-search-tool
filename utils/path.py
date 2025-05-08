@@ -1,8 +1,9 @@
 import os
 from pathlib import Path
+from typing import List
 import ctypes
 
-def pwd():
+def pwd() -> str:
     current_dir = os.getcwd()
     if not os.path.exists(current_dir):
         current_dir = "/"
@@ -39,14 +40,14 @@ def path_startswith(base: str, target: str) -> bool:
         return False
 
 
-def is_path_excluded(path: str, exclude_paths: list[str]) -> bool:
+def is_path_excluded(path: str, exclude_paths: List[str]) -> bool:
     for exclude_path in exclude_paths:
         if path_startswith(exclude_path, path):
             return True
     return False
 
 
-def cleanup_path_list(path_list: list[str]) -> list[str]:
+def cleanup_path_list(path_list: List[str]) -> List[str]:
     cleaned_list = []
 
     if not isinstance(path_list, list):

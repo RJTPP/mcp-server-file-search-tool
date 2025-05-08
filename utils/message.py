@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, Optional, Dict
 
 def return_message(
     results: Any,
@@ -6,7 +6,7 @@ def return_message(
     time_elapsed: Optional[float] = None,
     response_message: Optional[str] = None,
     **kwargs: Any,
-) -> dict[str, Any]:
+) -> Dict[str, Any]:
     response = {
         "results": results,
         "success": success,
