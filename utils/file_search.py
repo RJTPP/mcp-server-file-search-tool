@@ -357,12 +357,13 @@ class FileSearchTool:
         }
     
     
-    def read_files(self, file_paths: List[str]) -> Dict[str, Any]:
+    def read_files(self, file_paths: List[str], max_chars: int = -1) -> Dict[str, Any]:
         """
         Read the contents of the given files using `open()` function. Cannot read PDFs.
 
         Args:
             file_paths (List[str]): List of file paths to read.
+            max_chars (int): Maximum number of characters to read from each file. -1 = no limit.
 
         Returns:
             Dict[str, Any]: Dict with:
@@ -386,17 +387,17 @@ class FileSearchTool:
             try:
                 mime_type = mimetypes.guess_type(file_path)[0]
                 if mime_type == FileType.PDF.value:
-                    results[file_path] = read_pdf(file_path)
+                    results[file_path] = read_pdf(file_path)[:max_chars] if max_chars > 0 else read_pdf(file_path)
                     continue
                 elif mime_type == FileType.DOCX.value:
-                    results[file_path] = read_docx(file_path)
+                    results[file_path] = read_docx(file_path)[:max_chars] if max_chars > 0 else read_docx(file_path)
                     continue
             except Exception:
                 pass
 
             try:
                 with open(file_path, "r", encoding="utf-8", errors="replace") as file:
-                    results[file_path] = file.read()
+                    results[file_path] = file.read()[:max_chars] if max_chars > 0 else file.read()
             except FileNotFoundError:
                 results[file_path] = "[File not found]"
             except PermissionError:

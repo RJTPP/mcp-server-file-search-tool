@@ -201,12 +201,13 @@ def search_file_name(
 
 # TODO: Read multiple files types
 @mcp.tool()
-def read_files(file_paths: List[str]) -> Dict[str, Any]:
+def read_files(file_paths: List[str], max_chars: int = -1) -> Dict[str, Any]:
     """
     Read the contents of the given files using `open()` function. Cannot read PDFs.
 
     Args:
         file_paths (list[str]): List of file paths to read.
+        max_chars (int): Maximum number of characters to read from each file. -1 = no limit.
 
     Returns:
         Dict: A dictionary with the following keys:
@@ -216,7 +217,7 @@ def read_files(file_paths: List[str]) -> Dict[str, Any]:
     """
     file_paths = masker.unmask_multiple_paths(file_paths)
     try:
-        query_result = file_search_tools.read_files(file_paths)
+        query_result = file_search_tools.read_files(file_paths, max_chars)
         results = query_result['results']
         results = {masker.mask_path(k): v for k, v in results.items()}
         time_elapsed = query_result['time_elapsed']
