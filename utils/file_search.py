@@ -49,16 +49,16 @@ class FileSearchTool:
         if not any(path_startswith(root, real_str) for root in self.allowed_paths):
             if not strict:
                 return None
-            raise PermissionError(f"Access denied—`{real_str}` outside allowed directories.")
+            raise PermissionError(f"Access denied: `{real_str}` is outside allowed directories.")
         if any(path_startswith(ex, real_str) for ex in self.exclude_paths):
             if not strict:
                 return None
-            raise PermissionError(f"Access denied—`{real_str}` is excluded.")
+            raise PermissionError(f"Access denied: `{real_str}` is excluded.")
         
         if not self._SHOW_HIDDEN and is_hidden(real_str):
             if not strict:
                 return None
-            raise PermissionError(f"Access denied—`{real_str}` is hidden.")
+            raise PermissionError(f"Access denied: `{real_str}` is hidden.")
 
         return real_str
 
