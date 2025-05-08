@@ -37,18 +37,18 @@ class PathMasker:
     def mask_path(self, path: str) -> str:
         if not self.enabled:
             return path
-        abs_path = str(Path(path).resolve(strict=False))
+
         if os.name != "nt":
-            abs_path = abs_path.rstrip("/")
+            path = path.rstrip("/")
 
         if self.mode == "prefix":
             for original, masked in sorted(self.masked_map.items(), key=lambda x: -len(x[0])):
-                if path_startswith(original, abs_path):
-                    return abs_path.replace(original, masked, 1)
-            return abs_path
+                if path_startswith(original, path):
+                    return path.replace(original, masked, 1)
+            return path
 
         elif self.mode == "segment":
-            parts = abs_path.split(os.sep)
+            parts = path.split(os.sep)
             masked_parts = [
                 self.masked_map.get(part, part) for part in parts
             ]
