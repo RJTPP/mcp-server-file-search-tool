@@ -7,7 +7,9 @@ import re
 import mimetypes
 
 
+from .file_reader import read_pdf, read_docx
 from .path import cleanup_path_list, is_hidden, path_startswith
+from .file_type import FileType
 
 
 class FileSearchTool:
@@ -382,6 +384,17 @@ class FileSearchTool:
                 continue
 
             try:
+                mime_type = mimetypes.guess_type(file_path)[0]
+                if mime_type == FileType.PDF.value:
+                    results[file_path] = read_pdf(file_path)
+                    continue
+                elif mime_type == FileType.DOCX.value:
+                    results[file_path] = read_docx(file_path)
+                    continue
+            except Exception:
+                pass
+
+            try:
                 with open(file_path, "r", encoding="utf-8", errors="replace") as file:
                     results[file_path] = file.read()
             except FileNotFoundError:
@@ -455,17 +468,17 @@ class FileSearchTool:
 
             # --- Read file ---
             matches = []
+
             
             try:
-                with open(abs_path, "r", encoding="utf-8", errors="replace") as f:
-                    lines = f.readlines()
-
-                for idx, line in enumerate(lines):
-                    if any(r.search(line) for r in include_re):
-                        start = max(0, idx - context_lines)
-                        end = min(len(lines), idx + context_lines + 1)
-                        block = "".join(lines[start:end])
-                        matches.append(block)
+                mime_type = mimetypes.guess_type(abs_path)[0]
+                if mime_type == FileType.PDF.value:
+                    lines = read_pdf(abs_path).split("\n")
+                elif mime_type == FileType.DOCX.value:
+                    lines = read_docx(abs_path).split("\n")
+                else:
+                    with open(abs_path, "r", encoding="utf-8", errors="replace") as f:
+                        lines = f.readlines()
                         
             except FileNotFoundError:
                 results[abs_path] = "[File not found]"
@@ -479,6 +492,13 @@ class FileSearchTool:
             except Exception as e:
                 results[abs_path] = f"[Error: {e}]"
                 continue
+
+            for idx, line in enumerate(lines):
+                if any(r.search(line) for r in include_re):
+                    start = max(0, idx - context_lines)
+                    end = min(len(lines), idx + context_lines + 1)
+                    block = "".join(lines[start:end])
+                    matches.append(block)
 
             if matches:
                 results[abs_path] = matches
