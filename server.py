@@ -5,7 +5,7 @@ from typing import Optional
 
 from utils import FileSearchTool, return_message, PathMasker
 from config import (
-    BASE_DIR,
+    ALLOWED_PATHS,
     EXCLUDE_PATHS,
     HIDE_HIDDEN_FILES,
     DEFAULT_TIME_LIMIT,
@@ -18,7 +18,7 @@ from config import (
 )
 
 file_search_tools = FileSearchTool(
-    init_dir=BASE_DIR,
+    allowed_paths=ALLOWED_PATHS,
     exclude_paths=EXCLUDE_PATHS,
     hide_hidden=HIDE_HIDDEN_FILES,
     default_time_limit=DEFAULT_TIME_LIMIT
@@ -41,64 +41,28 @@ mcp = FastMCP(
 
 
 @mcp.tool()
-def get_current_dir() -> dict:
+def get_allowed_paths() -> dict:
     """
-    Get the current directory. Equivalent to `pwd`.
+    Retrieve the list of allowed root directories that this server is permitted to access.
 
-    Args:
-        None
+    This is useful for understanding the scope of directories that can be browsed,
+    searched, or read by the file tools. Each returned path is masked for privacy
+    if path masking is enabled.
 
     Returns:
         dict: A dictionary with the following keys:
-            - results (str): Current directory path
-            - success (bool): True if the operation was successful
-            - response_message (str): A message indicating the result of the operation
+            - results (list[str]): List of allowed directory paths (masked if configured).
+            - success (bool): True if the operation was successful.
+            - response_message (str): A human-readable description of the result.
     """
-    current_dir = file_search_tools.get_current_dir()
-    if not current_dir:
-        return return_message(
-            results=None,
-            success=False,
-            response_message="Failed to get current directory.",
-        )
-    current_dir = masker.mask_path(current_dir)
-    return return_message(
-        results=current_dir,
-        success=True,
-        response_message="Current directory retrieved successfully.",
-    )
-
-
-@mcp.tool()
-def change_dir(path: Optional[str] = None) -> dict:
-    """
-    Change the current directory. Equivalent to `cd`.
-
-    Args:
-        path (str): Path to change to. Set to None to revert to the initial directory.
-
-    Returns:
-        dict: A dictionary with the following keys:
-            - results (str): Current directory path
-            - success (bool): True if the operation was successful
-            - response_message (str): A message indicating the result of the operation
-    """
-    masked_base_dir = masker.mask_path(file_search_tools.base_dir)
-    if not path:
-        path = file_search_tools._INIT_DIR
     try:
-        new_dir = file_search_tools.change_dir(path)
-        new_dir = masker.mask_path(new_dir)
-        return return_message(results=new_dir, success=True, response_message="Changed directory.")
-    except FileNotFoundError:
-        return return_message(results=masked_base_dir, success=False, response_message=f"Path not found. Reverting back to `{masked_base_dir}`.")
-    except PermissionError:
-        return return_message(results=masked_base_dir, success=False, response_message=f"Permission denied. Reverting back to `{masked_base_dir}`.")
-    except NotADirectoryError:
-        return return_message(results=masked_base_dir, success=False, response_message=f"Path is not a directory. Reverting back to `{masked_base_dir}`.")
+        allowed_paths = file_search_tools.get_allowed_paths()
+        allowed_paths = masker.mask_multiple_paths(allowed_paths)
+        return return_message(results=allowed_paths, success=True, response_message="Allowed path retrieved successfully.")
     except Exception as e:
-        return return_message(results=masked_base_dir, success=False, response_message=f"Failed to change directory. Reverting back to `{masked_base_dir}`. Error: {str(e)}")
-
+        return return_message(results=None, success=False, response_message=str(e))
+    
+# TODO: Read MIME types
 @mcp.tool()
 def get_path_type(paths: list[str]) -> dict:
     """
@@ -121,9 +85,10 @@ def get_path_type(paths: list[str]) -> dict:
     except Exception as e:
         return return_message(results=None, success=False, response_message=str(e))
 
+
 @mcp.tool()
 def list_file_paths(
-    base_dir: Optional[str] = None,
+    base_dir: str,
     show_hidden: Optional[bool] = None,
     limit: int = -1,
     time_limit: Optional[float] = None,
@@ -152,10 +117,7 @@ def list_file_paths(
             - results (list[str]): List of files. Sorted alphabetically.
             - time_elapsed (float): Time elapsed in seconds.
             - response_message (str): A message indicating the result of the operation
-    """
-    if base_dir is None:
-        base_dir = file_search_tools.get_current_dir()
-    
+    """    
     base_dir = masker.unmask_path(base_dir)
     try:
         query_result = file_search_tools.list_file_paths(
@@ -237,6 +199,7 @@ def search_file_name(
     except Exception as e:
         return return_message(results=None, success=False, time_elapsed=None, response_message=str(e))
 
+# TODO: Read multiple files types
 @mcp.tool()
 def read_files(file_paths: list[str]) -> dict:
     """
@@ -263,6 +226,7 @@ def read_files(file_paths: list[str]) -> dict:
         return return_message(results=None, success=False, time_elapsed=None, response_message=str(e))
 
 
+# TODO: Read multiple files types
 @mcp.tool()
 def search_file_contents(
     file_paths: list[str], 
@@ -307,10 +271,11 @@ def search_file_contents(
         return return_message(results=None, success=False, time_elapsed=None, response_message=str(e))
 
 
+# TODO: Read multiple files types
 @mcp.tool()
 def list_file_and_search_file_contents(
     regex_patterns: list[str],
-    base_dir: Optional[str] = None,
+    base_dir: str,
     show_hidden: Optional[bool] = None,
     limit: int = -1,
     max_nested_level: int = 1,
@@ -337,8 +302,6 @@ def list_file_and_search_file_contents(
             - 'time_elapsed': Time elapsed in seconds.
             - 'response_message': A message indicating the result of the operation
     """
-    if base_dir is None:
-        base_dir = file_search_tools.get_current_dir()
     base_dir = masker.unmask_path(base_dir)
     try:
         listing_query_result = file_search_tools.list_file_paths(base_dir, show_hidden, limit, time_limit, max_nested_level, "bfs", start_from, True, True)

@@ -6,59 +6,83 @@ from collections import deque
 import re
 
 
-from .path import pwd, cleanup_path_list, is_path_excluded, is_hidden
+from .path import pwd, cleanup_path_list, is_hidden, path_startswith
 
 
 class FileSearchTool:
-    def __init__(self, init_dir: str, exclude_paths: list[str], hide_hidden: bool = True, default_time_limit: int = 10):
-        self.root_path = Path(pwd()).root
-        self._INIT_DIR = str(Path(init_dir).resolve()) if init_dir else pwd()
+    def __init__(self, allowed_paths: list[str], exclude_paths: list[str], hide_hidden: bool = True, default_time_limit: int = 10):
+        self.allowed_paths = cleanup_path_list(allowed_paths)
+        self.exclude_paths = cleanup_path_list(exclude_paths)
+        
         self._SHOW_HIDDEN = not hide_hidden
         self._DEFAULT_TIME_LIMIT = default_time_limit        
-        self.base_dir = self._INIT_DIR
-        self.exclude_paths = cleanup_path_list(exclude_paths)
 
-    def _resolve_path(self, rel_path: str) -> str:
-        if rel_path in [".", "./"]:
-            return str(Path(self.base_dir).resolve(strict=False))
-        p = Path(rel_path).expanduser()
-        # 1) If the user passed an absolute path, trust it:
+
+    def _resolve_path(self, rel_path: str, strict: bool = True) -> Optional[str]:
+        if rel_path in ("", ".", "./"):
+            rel_path = self.allowed_paths[0]  # default root
+            
+        # 1) Expand and resolve
+        p = Path(rel_path.strip()).expanduser()
+        candidate = None
         if p.is_absolute():
-            return str(p.resolve(strict=False))
-        # 2) Otherwise, interpret it *inside* your base_dir:
-        return str((Path(self.base_dir) / p).resolve(strict=False))
+            candidate = p.resolve(strict=False)
+        else:
+            # look for it under each allowed root
+            cand = None
+            for root in self.allowed_paths:
+                cand = (Path(root) / p).resolve(strict=False)
+                if cand.exists():
+                    candidate = cand
+                    break
 
-    def get_current_dir(self) -> str:
-        return self._resolve_path(self.base_dir)
+        if not candidate or not candidate.exists():
+            if not strict:
+                return None
+            raise FileNotFoundError(f"Path `{rel_path}` not found in allowed directories.")
+
+        # 2) Canonicalize (resolve symlinks)
+        real = Path(candidate).resolve(strict=False)
+        real_str = str(real)
+
+        # 3) Whitelist and blacklist checks
+        if not any(path_startswith(root, real_str) for root in self.allowed_paths):
+            if not strict:
+                return None
+            raise PermissionError(f"Access denied—`{real_str}` outside allowed directories.")
+        if any(path_startswith(ex, real_str) for ex in self.exclude_paths):
+            if not strict:
+                return None
+            raise PermissionError(f"Access denied—`{real_str}` is excluded.")
+        
+        if not self._SHOW_HIDDEN and is_hidden(real_str):
+            if not strict:
+                return None
+            raise PermissionError(f"Access denied—`{real_str}` is hidden.")
+
+        return real_str
+
+
+    def get_allowed_paths(self) -> list[str]:
+        return self.allowed_paths
 
 
     # MARK: TEMPORARY TEST FUNCTION
-    def get_exclude_paths(self) -> dict[str, list[str]]:
-        return { "exclude_paths": self.exclude_paths}
-
-
-    def change_dir(self, path: str) -> str:
-        """
-        Change the current directory. Equivalent to `cd`.
-        """
-        resolved = self._resolve_path(path)
-
-        # 1) Check existence on the resolved path
-        if not os.path.exists(resolved):
-            raise FileNotFoundError(f"Path `{resolved}` does not exist.")
-
-        # 2) Check if it's a directory
-        if not os.path.isdir(resolved):
-            raise NotADirectoryError(f"`{resolved}` is not a directory.")
-
-        # 3) Check exclusion on the same canonical path
-        if is_path_excluded(resolved, self.exclude_paths):
-            raise PermissionError(f"Permission denied for `{resolved}`.")
-
-        # 4) Update base_dir to the resolved path
-        self.base_dir = resolved
-        return self.base_dir
-        
+    def get_exclude_paths(self) -> list[str]:
+        return self.exclude_paths
+    
+    
+    def is_allowed_path(self, path: str) -> bool:
+        if not path:
+            return False
+        if not self._SHOW_HIDDEN and is_hidden(path):
+            return False
+        try:
+            _ = self._resolve_path(path, strict=True)
+            return True
+        except (PermissionError, FileNotFoundError):
+            return False
+  
 
     def get_path_type(self, paths: list[str]) -> list[tuple[str, str]]:
         """
@@ -71,9 +95,15 @@ class FileSearchTool:
             list[tuple[str, str]]: List of tuples of (path, type).
         """
         def _sub_get_path_type(path: str) -> str:
+            
             if not os.path.exists(path):
                 return "not found"
+            
+            if not self.is_allowed_path(path):
+                return "[Permission Denied]"
+            
             file_type = "unknown"
+            
             if os.path.isdir(path):
                 file_type = "directory"
             elif os.path.islink(path):
@@ -87,7 +117,7 @@ class FileSearchTool:
 
     def list_file_paths(
         self,
-        base_dir: Optional[str] = None,
+        base_dir: str,
         show_hidden: bool = False,
         limit: int = -1,
         time_limit: Optional[float] = None,
@@ -125,9 +155,9 @@ class FileSearchTool:
             time_limit = self._DEFAULT_TIME_LIMIT
 
         if base_dir in [None, ""]:
-            base_dir = self.base_dir
+            raise ValueError("base_dir cannot be empty.")
         
-        base_dir = os.path.abspath(base_dir) if base_dir else self.base_dir
+        base_dir = self._resolve_path(base_dir)
         start_time = datetime.now()
         results, count = [], 0
         is_limit_exceeded = False
@@ -162,7 +192,7 @@ class FileSearchTool:
 
             for name in entries:
                 full = os.path.join(current_dir, name)
-                if is_path_excluded(full, self.exclude_paths):
+                if not self.is_allowed_path(full):
                     continue
 
                 # If it’s a directory, enqueue for further traversal
@@ -208,6 +238,7 @@ class FileSearchTool:
         show_hidden: bool = False,
         time_limit: Optional[float] = None,
         max_nested_level: int = 1,
+        abs_path: bool = False,
         search_mode: Literal["bfs", "dfs"] = "bfs",
     ) -> dict[str, list[str] | None]:
         """
@@ -220,6 +251,7 @@ class FileSearchTool:
             show_hidden (bool): Include hidden files (those starting with '.'). Can be overridden by the user.
             time_limit (int): Seconds after which to abort (-1 = no limit, None = default).
             max_nested_level (int): Depth to recurse: 0 = only root, 1 = root+its subdirs, -1 = unlimited.
+            abs_path (bool): If True, return absolute paths.
             search_mode (Literal["bfs", "dfs"]): Search mode: "bfs" (recommended) or "dfs".
 
         Returns:
@@ -232,7 +264,7 @@ class FileSearchTool:
             time_limit = self._DEFAULT_TIME_LIMIT
 
         if base_path in [None, ""]:
-            base_path = self.base_dir
+            raise ValueError("base_path cannot be empty.")
         
         if not self._SHOW_HIDDEN:
             show_hidden = False
@@ -252,7 +284,7 @@ class FileSearchTool:
         except re.error as e:
             raise ValueError(f"Invalid regex pattern in `exclude_regex_patterns`: {e}")
 
-        root = os.path.abspath(base_path or self.base_dir)
+        root = self._resolve_path(base_path)
         
         start_time = datetime.now()
         
@@ -262,7 +294,7 @@ class FileSearchTool:
         while queue:
             current_dir, level = queue.popleft() if search_mode == "bfs" else queue.pop()
             
-            if any(p.search(current_dir) for p in ex_pat) or is_path_excluded(current_dir, self.exclude_paths):
+            if any(p.search(current_dir) for p in ex_pat) or not self.is_allowed_path(current_dir):
                 continue  # skips everything for this directory
             
             # time‑quit check
@@ -282,6 +314,9 @@ class FileSearchTool:
             for name in entries:
                 full_path = os.path.join(current_dir, name)
                 
+                if not self.is_allowed_path(full_path):
+                    continue
+                
                 # If it’s a file and matches, record it
 
                 if not os.path.isdir(full_path):
@@ -289,7 +324,10 @@ class FileSearchTool:
                         if not show_hidden and is_hidden(name):
                             continue
                         if p.search(name):
-                            results.append(full_path)
+                            if abs_path:
+                                results.append(full_path)
+                            else:
+                                results.append(os.path.relpath(full_path, root))
                             break
                 
                 # If it’s a directory and we haven’t hit max_nested_level, enqueue its contents
@@ -316,7 +354,7 @@ class FileSearchTool:
 
         Returns:
             dict[str, list[str] | None]: Dict with:
-                - 'results': Dict with file paths as keys and file contents as values.
+                - 'results': Dict with 'results' as a dict mapping file paths to contents.
                 - 'time_elapsed': Time elapsed in seconds.
             
         """
@@ -327,10 +365,10 @@ class FileSearchTool:
 
         results = {}
         for file_path in file_paths:
-            file_path = self._resolve_path(file_path)
+            file_path = self._resolve_path(file_path, strict=False)
 
-            if is_path_excluded(file_path, self.exclude_paths):
-                results[file_path] = "[Excluded]"
+            if not self.is_allowed_path(file_path):
+                results[file_path] = "[Permission denied]"
                 continue
 
             try:
@@ -397,7 +435,11 @@ class FileSearchTool:
                     "is_time_limit_exceeded": True,
                 }
 
-            abs_path = self._resolve_path(rel_path)
+            abs_path = self._resolve_path(rel_path, strict=False)
+
+            if not self.is_allowed_path(abs_path):
+                results[abs_path] = "[Permission denied]"
+                continue
             # --- Emit status per file ---
 
 
