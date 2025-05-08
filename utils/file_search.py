@@ -67,7 +67,6 @@ class FileSearchTool:
         return self.allowed_paths
 
 
-    # MARK: TEMPORARY TEST FUNCTION
     def get_exclude_paths(self) -> List[str]:
         return self.exclude_paths
     
