@@ -94,32 +94,35 @@ class FileSearchTool:
         Returns:
             List[Tuple[str, str]]: List of tuples of (path, type).
         """
-        def _sub_get_path_type(path: str) -> str:
+        def _sub_get_path_type(path: str) -> Tuple[str, str]:
             
-            if not os.path.exists(path):
-                return "not found"
-            
-            if not self.is_allowed_path(path):
-                return "[Permission Denied]"
+            try:
+                resolved_path = self._resolve_path(path, strict=True)
+            except PermissionError:
+                return path, "[Permission Denied]"
+            except FileNotFoundError:
+                return path, "[Not Found]"
+            except Exception:
+                return path, "[Unknown Error]"
             
             file_type = "unknown"
             
-            if os.path.isdir(path):
+            if os.path.isdir(resolved_path):
                 file_type = "directory"
-            elif os.path.islink(path):
+            elif os.path.islink(resolved_path):
                 file_type = "symbolic link"
-            elif os.path.isfile(path):
+            elif os.path.isfile(resolved_path):
                 file_type = "file"
                 try:
-                    mime_type = mimetypes.guess_type(path)[0]
+                    mime_type = mimetypes.guess_type(resolved_path)[0]
                     if mime_type:
                         file_type = mime_type
                 except Exception:
                     pass
 
-            return file_type
+            return resolved_path, file_type
         
-        return [(p, _sub_get_path_type(p)) for p in paths]
+        return [_sub_get_path_type(p) for p in paths]
 
 
     def list_file_paths(
