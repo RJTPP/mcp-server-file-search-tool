@@ -4,18 +4,18 @@ An MCP (Model Context Protocol) server that provides powerful file system search
 
 ## Features
 
-- **Allowed paths**: Restrict server to only browse and search within configured directories.  
-- **Exclude paths**: Prevent sensitive directories from being accessed.  
-- **Hide hidden files**: Optionally ignore files and directories beginning with a dot.  
-- **Path masking**: Replace configured path segments with tokens for privacy.  
 - **List file paths**: Breadth‑first or depth‑first listing, with paging and nested‑level control.  
 - **Search file names**: Regex‑based file name search.  
 - **Read files**: Read text, PDF, and DOCX files with optional character limits.  
 - **Search file contents**: Regex‑based content search with configurable context lines.  
+- **Allowed paths**: Restrict server to only browse and search within configured directories.  
+- **Exclude paths**: Prevent sensitive directories from being accessed.  
+- **Hide hidden files**: Optionally ignore files and directories beginning with a dot.  
+- **Path masking**: Replace configured path segments with tokens for privacy.  
 
 ### Prerequisites
 
-- Python 3.10 or higher
+- [Python](https://www.python.org) 3.10 or higher
 - [uv](https://github.com/astral-sh/uv) - Fast Python package manager
 
 ### Installation
