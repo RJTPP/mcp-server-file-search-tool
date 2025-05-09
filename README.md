@@ -1,4 +1,4 @@
-# 🗂️ File Search Tool - MCP Server
+# MCP Server - File Search Tool 🗂️
 
 An MCP (Model Context Protocol) server that provides powerful file system search and inspection capabilities via the MCP protocol. Use this tool to list directories, search file names, read file contents (including PDF and DOCX), and perform regex‑based content searches with context.
 
