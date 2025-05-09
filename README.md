@@ -124,9 +124,10 @@ Or manually add it to `claude_desktop_config.json`:
 
 ## Security
 
-> **Warning:** This server does **not** implement authentication or encryption.  
-> It is designed **for local, personal use only**.  
-> Do **not** expose it to untrusted networks or use it in production without adding proper security measures.
+> [!WARNING]
+> This server does **not** implement authentication or encryption.  
+> It is designed **for local, personal use only**
+> Do **not** expose the server to untrusted networks or use it in production without adding proper security measures.
 
 
 ## License
