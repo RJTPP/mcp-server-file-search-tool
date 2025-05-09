@@ -328,4 +328,5 @@ def list_file_and_search_file_contents(
 
 
 if __name__ == "__main__":
+    print(f"Starting server on {HOST}:{PORT}")
     mcp.run()
