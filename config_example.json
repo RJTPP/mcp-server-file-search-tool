@@ -1,0 +1,21 @@
+{
+    "DEFAULT_TIME_LIMIT": 10,
+    "HIDE_HIDDEN_FILES": true,
+    "HOST": "127.0.0.1",
+    "PORT": 6277,
+    "ALLOWED_PATHS": [
+        "/path/to/allowed/directory"
+    ],
+    "EXCLUDE_PATHS": [
+        "/path/to/excluded/directory"
+    ],
+    "PATH_MASKER": {
+        "ENABLED": true,
+        "MODE": "segment",
+        "MASK_TOKEN": "MASK",
+        "LOOK_FOR": [
+            "path_to_mask"
+        ]
+    }
+
+}

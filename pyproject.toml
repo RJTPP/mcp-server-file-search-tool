@@ -1,9 +1,12 @@
 [project]
-name = "mcp-file-search-tool"
+name = "mcp-sever-file-search-tool"
 version = "0.1.0"
-description = "Add your description here"
+description = "A Model Context Protocol (MCP) server for searching file content with regex across various file types"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.10.16"
 dependencies = [
     "mcp[cli]>=1.7.1",
+    "pymupdf>=1.25.5",
+    "pymupdf4llm>=0.0.22",
+    "python-docx>=1.1.2",
 ]
